@@ -279,6 +279,9 @@ body {
 .content-header {
   padding: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .content-header h2 {
@@ -288,8 +291,21 @@ body {
   text-transform: capitalize;
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
 .content-body {
   padding: 2rem;
+}
+
+/* Stat Details */
+.stat-detail {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-top: 0.25rem;
 }
 
 /* Overview Section Styles */
@@ -521,6 +537,14 @@ body {
   margin-right: 1rem;
 }
 
+.quiz-description {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -723,6 +747,21 @@ body {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Error Message */
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
 }
 
 /* Form Styles */
@@ -980,5 +1019,11 @@ body {
   
   .content-body {
     padding: 1rem;
+  }
+  
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
   }
 }

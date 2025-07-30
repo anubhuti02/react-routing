@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 
 interface CreateQuizModalProps {
   onClose: () => void
+  onCreateQuiz: (quizData: NewQuizData) => void
 }
 
 interface Question {
@@ -11,7 +12,16 @@ interface Question {
   correctAnswer: number
 }
 
-const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
+interface NewQuizData {
+  title: string
+  subject: string
+  description: string
+  duration: number
+  passingScore: number
+  questions: Question[]
+}
+
+const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose, onCreateQuiz }) => {
   const [quizData, setQuizData] = useState({
     title: '',
     subject: '',
@@ -26,6 +36,8 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
     options: ['', '', '', ''],
     correctAnswer: 0
   })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleQuizDataChange = (field: string, value: string | number) => {
     setQuizData(prev => ({ ...prev, [field]: value }))
@@ -43,10 +55,12 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
   }
 
   const addQuestion = () => {
-    if (currentQuestion.question && currentQuestion.options.every(opt => opt.trim())) {
+    if (currentQuestion.question.trim() && currentQuestion.options.every(opt => opt.trim())) {
       const newQuestion: Question = {
         id: Date.now().toString(),
-        ...currentQuestion
+        question: currentQuestion.question.trim(),
+        options: currentQuestion.options.map(opt => opt.trim()),
+        correctAnswer: currentQuestion.correctAnswer
       }
       setQuestions(prev => [...prev, newQuestion])
       setCurrentQuestion({
@@ -61,16 +75,54 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
     setQuestions(prev => prev.filter(q => q.id !== id))
   }
 
-  const handleSubmit = () => {
-    if (quizData.title && quizData.subject && questions.length > 0) {
-      // Here you would typically send the data to your backend
-      console.log('Quiz Data:', { ...quizData, questions })
-      onClose()
+  const handleSubmit = async () => {
+    // Validate required fields
+    if (!quizData.title.trim()) {
+      alert('Please enter a quiz title')
+      return
+    }
+    
+    if (!quizData.subject) {
+      alert('Please select a subject')
+      return
+    }
+    
+    if (questions.length === 0) {
+      alert('Please add at least one question')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Prepare the quiz data
+      const newQuizData: NewQuizData = {
+        title: quizData.title.trim(),
+        subject: quizData.subject,
+        description: quizData.description.trim(),
+        duration: quizData.duration,
+        passingScore: quizData.passingScore,
+        questions: questions
+      }
+
+      // Call the parent's onCreateQuiz function
+      onCreateQuiz(newQuizData)
+      
+      // Show success message
+      alert(`Quiz "${newQuizData.title}" created successfully!`)
+      
+    } catch (error) {
+      console.error('Error creating quiz:', error)
+      alert('Error creating quiz. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const isFormValid = quizData.title.trim() && quizData.subject && questions.length > 0
+
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-content">
         <div className="modal-header">
           <h2>Create New Quiz</h2>
@@ -83,19 +135,21 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
               <h3>Quiz Information</h3>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Quiz Title</label>
+                  <label>Quiz Title *</label>
                   <input
                     type="text"
                     value={quizData.title}
                     onChange={(e) => handleQuizDataChange('title', e.target.value)}
                     placeholder="Enter quiz title"
+                    required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Subject</label>
+                  <label>Subject *</label>
                   <select
                     value={quizData.subject}
                     onChange={(e) => handleQuizDataChange('subject', e.target.value)}
+                    required
                   >
                     <option value="">Select Subject</option>
                     <option value="Mathematics">Mathematics</option>
@@ -103,6 +157,10 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                     <option value="History">History</option>
                     <option value="English">English</option>
                     <option value="Geography">Geography</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Biology">Biology</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Physics">Physics</option>
                   </select>
                 </div>
               </div>
@@ -112,7 +170,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                 <textarea
                   value={quizData.description}
                   onChange={(e) => handleQuizDataChange('description', e.target.value)}
-                  placeholder="Brief description of the quiz"
+                  placeholder="Brief description of the quiz (optional)"
                   rows={3}
                 />
               </div>
@@ -123,7 +181,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                   <input
                     type="number"
                     value={quizData.duration}
-                    onChange={(e) => handleQuizDataChange('duration', parseInt(e.target.value))}
+                    onChange={(e) => handleQuizDataChange('duration', parseInt(e.target.value) || 30)}
                     min="5"
                     max="180"
                   />
@@ -133,7 +191,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                   <input
                     type="number"
                     value={quizData.passingScore}
-                    onChange={(e) => handleQuizDataChange('passingScore', parseInt(e.target.value))}
+                    onChange={(e) => handleQuizDataChange('passingScore', parseInt(e.target.value) || 70)}
                     min="0"
                     max="100"
                   />
@@ -145,7 +203,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
               <h3>Add Questions</h3>
               <div className="question-form">
                 <div className="form-group">
-                  <label>Question</label>
+                  <label>Question *</label>
                   <input
                     type="text"
                     value={currentQuestion.question}
@@ -164,7 +222,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                           checked={currentQuestion.correctAnswer === index}
                           onChange={() => handleQuestionChange('correctAnswer', index)}
                         />
-                        Option {index + 1}
+                        Option {index + 1} {currentQuestion.correctAnswer === index && '(Correct)'}
                       </label>
                       <input
                         type="text"
@@ -179,7 +237,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                 <button 
                   className="add-question-btn"
                   onClick={addQuestion}
-                  disabled={!currentQuestion.question || !currentQuestion.options.every(opt => opt.trim())}
+                  disabled={!currentQuestion.question.trim() || !currentQuestion.options.every(opt => opt.trim())}
                 >
                   ➕ Add Question
                 </button>
@@ -191,11 +249,12 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                   {questions.map((question, index) => (
                     <div key={question.id} className="question-item">
                       <div className="question-header">
-                        <span className="question-number">{index + 1}.</span>
+                        <span className="question-number">Q{index + 1}.</span>
                         <span className="question-text">{question.question}</span>
                         <button 
                           className="remove-btn"
                           onClick={() => removeQuestion(question.id)}
+                          title="Remove question"
                         >
                           🗑️
                         </button>
@@ -206,7 +265,8 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
                             key={optIndex} 
                             className={`option ${optIndex === question.correctAnswer ? 'correct' : ''}`}
                           >
-                            {option}
+                            {String.fromCharCode(65 + optIndex)}. {option}
+                            {optIndex === question.correctAnswer && ' ✓'}
                           </span>
                         ))}
                       </div>
@@ -219,15 +279,15 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({ onClose }) => {
         </div>
 
         <div className="modal-footer">
-          <button className="btn secondary" onClick={onClose}>
+          <button className="btn secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </button>
           <button 
             className="btn primary"
             onClick={handleSubmit}
-            disabled={!quizData.title || !quizData.subject || questions.length === 0}
+            disabled={!isFormValid || isSubmitting}
           >
-            Create Quiz
+            {isSubmitting ? 'Creating...' : 'Create Quiz'}
           </button>
         </div>
       </div>
